@@ -26,7 +26,7 @@ TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER")
 
 # Initialize PaddleOCR engine
-ocr_engine = PaddleOCR(use_angle_cls=True, lang='en')
+ocr_engine = PaddleOCR(use_angle_cls=False, lang='en')
 
 def extract_invoice_data(text):
     """
