@@ -4,7 +4,7 @@ FROM python:3.10-slim
 # Set working directory
 WORKDIR /app
 
-# Install system packages required for PaddleOCR and PDF/image processing
+# Install system packages...
 RUN apt-get update && apt-get install -y \
     build-essential \
     libglib2.0-0 \
@@ -17,19 +17,12 @@ RUN apt-get update && apt-get install -y \
     poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy only the requirements file first to leverage Docker cache
+# Copy requirements file first...
 COPY requirements.txt .
 
 # Install Python dependencies
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
-
-# Copy model download script and pre-download PaddleOCR models
-COPY download_models.py .
-RUN python download_models.py
-
-# Clean up the download script to keep image tidy
-RUN rm download_models.py
 
 # Copy the rest of the application code
 COPY . .
@@ -39,6 +32,9 @@ EXPOSE 8000
 
 # Set environment variables for production
 ENV PYTHONUNBUFFERED=1
+
+# --- NEW: Set a writable directory for PaddleOCR models ---
+ENV PADDLEOCR_HOME=/tmp/.paddleocr/
 
 # Start FastAPI app with Uvicorn
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
