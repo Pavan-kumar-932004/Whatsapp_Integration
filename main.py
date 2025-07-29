@@ -194,6 +194,40 @@ def send_confirmation(to, invoice_number):
         logger.error(f"Unexpected error while sending confirmation for invoice {invoice_number}: {str(e)}")
         return False
 
+def send_error_message(to, error_text):
+    """
+    Send error message to user via Twilio WhatsApp API when processing fails.
+    
+    Args:
+        to (str): Recipient's WhatsApp number
+        error_text (str): User-friendly error message to send
+    
+    Returns:
+        bool: True if successful, False if failed
+    """
+    try:
+        logger.info(f"Sending error message to {to}: {error_text}")
+        client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+        
+        # Create a user-friendly error message with helpful guidance
+        message = f"❌ {error_text}\n\n💡 Tips for better results:\n• Ensure the image is clear and well-lit\n• Avoid shadows or glare\n• Make sure all text is visible\n• Try taking the photo from directly above the document"
+        
+        result = client.messages.create(
+            body=message,
+            from_=TWILIO_PHONE_NUMBER,
+            to=to
+        )
+        
+        logger.info(f"Error message sent successfully. Message SID: {result.sid}")
+        return True
+        
+    except TwilioRestException as e:
+        logger.error(f"Twilio error while sending error message to {to}: {str(e)}")
+        return False
+    except Exception as e:
+        logger.error(f"Unexpected error while sending error message to {to}: {str(e)}")
+        return False
+
 @app.post("/api/whatsapp/webhook")
 async def whatsapp_webhook(
     MediaUrl0: str = Form(None),
@@ -251,6 +285,11 @@ async def whatsapp_webhook(
         
         if not result or not result[0]:
             logger.error("OCR failed to extract any text from the image")
+            
+            # Send user-friendly error message to WhatsApp
+            error_text = "I couldn't read any text from your document. Please try sending a clearer image of your invoice."
+            send_error_message(From, error_text)
+            
             return JSONResponse(
                 {"error": "Could not extract text from the image. Please ensure the image is clear and contains readable text."}, 
                 status_code=400
@@ -267,6 +306,11 @@ async def whatsapp_webhook(
         db_success = save_invoice(invoice_id, total_amount, due_date, From)
         if not db_success:
             logger.error(f"Failed to save invoice {invoice_id} to database")
+            
+            # Notify user about database error
+            error_text = "There was a technical issue saving your invoice. Please try again in a few minutes."
+            send_error_message(From, error_text)
+            
             return JSONResponse(
                 {"error": "Failed to save invoice data to database. Please try again later."}, 
                 status_code=500
@@ -289,12 +333,22 @@ async def whatsapp_webhook(
         
     except requests.exceptions.RequestException as e:
         logger.error(f"Failed to download media from {MediaUrl0}: {str(e)}")
+        
+        # Notify user about download failure
+        error_text = "I couldn't download your document. Please try sending it again."
+        send_error_message(From, error_text)
+        
         return JSONResponse(
             {"error": "Failed to download the media file. Please check the file and try again."}, 
             status_code=400
         )
     except Exception as e:
         logger.error(f"Unexpected error processing webhook from {From}: {str(e)}")
+        
+        # Notify user about unexpected error
+        error_text = "Something unexpected happened while processing your invoice. Please try again later."
+        send_error_message(From, error_text)
+        
         return JSONResponse(
             {"error": "An unexpected error occurred while processing your invoice. Please try again later."}, 
             status_code=500
