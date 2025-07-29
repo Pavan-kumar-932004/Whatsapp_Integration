@@ -223,7 +223,20 @@ async def whatsapp_webhook(
     try:
         # Download media file with error handling
         logger.info(f"Downloading media from: {MediaUrl0}")
-        response = requests.get(MediaUrl0, timeout=30)
+        
+        # Ensure Twilio credentials are available for authentication
+        if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN:
+            logger.error("Twilio credentials not found in environment variables")
+            return JSONResponse(
+                {"error": "Server configuration error. Please contact support."}, 
+                status_code=500
+            )
+        
+        response = requests.get(
+            MediaUrl0,
+            auth=(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN),
+            timeout=30
+        )
         response.raise_for_status()  # Raises an HTTPError for bad responses
         
         # Save the downloaded file
