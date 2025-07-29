@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+psycopg2-binary
+twilio
+python-dotenv
+paddlepaddle==2.6.0
+paddleocr==2.7.0.3
+requests
