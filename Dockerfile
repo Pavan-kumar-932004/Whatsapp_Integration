@@ -24,6 +24,13 @@ COPY requirements.txt .
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
+# Copy model download script and pre-download PaddleOCR models
+COPY download_models.py .
+RUN python download_models.py
+
+# Clean up the download script to keep image tidy
+RUN rm download_models.py
+
 # Copy the rest of the application code
 COPY . .
 
