@@ -1,5 +1,6 @@
 numpy==1.24.4
 fastapi
+python-multipart
 uvicorn[standard]
 psycopg2-binary
 twilio
