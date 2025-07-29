@@ -1,5 +1,8 @@
-# Use official Python image with system dependencies
+# Use official Python image
 FROM python:3.10-slim
+
+# Set working directory
+WORKDIR /app
 
 # Install system packages required for PaddleOCR and PDF/image processing
 RUN apt-get update && apt-get install -y \
@@ -9,20 +12,19 @@ RUN apt-get update && apt-get install -y \
     libxrender-dev \
     libxext6 \
     libgl1-mesa-glx \
-    ttf-dejavu \
+    fonts-dejavu-core \
     wget \
     poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
-WORKDIR /app
-
-# Copy requirements and install Python dependencies
+# Copy only the requirements file first to leverage Docker cache
 COPY requirements.txt .
-RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Install Python dependencies
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy the rest of the application code
 COPY . .
 
 # Expose port for FastAPI
