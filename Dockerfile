@@ -1,6 +1,10 @@
 # Use official Python image
 FROM python:3.10-slim
 
+# Set environment variables at the top
+ENV PYTHONUNBUFFERED=1
+ENV PADDLEOCR_HOME=/tmp/.paddleocr/
+
 # Set working directory
 WORKDIR /app
 
@@ -24,11 +28,18 @@ COPY requirements.txt .
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
+# Copy model download script and pre-download PaddleOCR models
+COPY download_models.py .
+RUN python download_models.py
+
+# Clean up the download script to keep image tidy
+RUN rm download_models.py
+
 # Copy the rest of the application code
 COPY . .
 
-# Expose port for FastAPI
-EXPOSE 8000
+# Expose port 7860 for Hugging Face Spaces
+EXPOSE 7860
 
 # Set environment variables for production
 ENV PYTHONUNBUFFERED=1
@@ -36,5 +47,5 @@ ENV PYTHONUNBUFFERED=1
 # --- NEW: Set a writable directory for PaddleOCR models ---
 ENV PADDLEOCR_HOME=/tmp/.paddleocr/
 
-# Start FastAPI app with Uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start FastAPI app with Uvicorn on port 7860
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7860"]
